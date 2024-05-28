@@ -124,10 +124,12 @@ UPROGS=\
 	$U/_kill\
 	$U/_ln\
 	$U/_ls\
+	$U/_job\
 	$U/_mkdir\
 	$U/_rm\
 	$U/_sh\
 	$U/_stressfs\
+	$U/_testDrive\
 	$U/_usertests\
 	$U/_grind\
 	$U/_wc\

@@ -12,7 +12,7 @@
 #define BACK  5
 #define EXEC_REPARENT  6
 
-#define MAXARGS 10
+#define MAXARGS 12
 
 struct cmd {
   int type;
