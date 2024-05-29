@@ -8,6 +8,7 @@
 #include "elf.h"
 
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
+extern struct proc *initproc;
 
 int flags2perm(int flags)
 {
@@ -91,6 +92,16 @@ exec(char *path, char **argv)
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
       goto bad;
+    if (!argv[argc+1]) { // i.e., it is the last argument
+      if (argv[argc][0] == '&') { // is background process
+	      //printf("bg_process --- reparent it to init\n");
+	      p->parent = initproc;
+			acquire(&tickslock);
+			p->tick_exec = ticks;
+			release(&tickslock);
+	      break;
+      }
+    }
     sp -= strlen(argv[argc]) + 1;
     sp -= sp % 16; // riscv sp must be 16-byte aligned
     if(sp < stackbase)

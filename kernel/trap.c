@@ -165,6 +165,7 @@ clockintr()
 {
   acquire(&tickslock);
   ticks++;
+//printf("%d\n", ticks);
   wakeup(&ticks);
   release(&tickslock);
 }

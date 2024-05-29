@@ -10,6 +10,7 @@
 #define PIPE  3
 #define LIST  4
 #define BACK  5
+#define EXEC_REPARENT  6
 
 #define MAXARGS 10
 
@@ -80,6 +81,20 @@ runcmd(struct cmd *cmd)
     fprintf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
 
+  case EXEC_REPARENT:
+    //fprintf(1, "exec_reparent\n");
+    ecmd = (struct execcmd*)cmd;
+    uint64 index = 0;
+    for(index = 0; ecmd->argv[index]; index++) {
+      ;
+    }
+    ecmd->argv[index] = "&";
+    if(ecmd->argv[0] == 0)
+      exit(1);
+    exec(ecmd->argv[0], ecmd->argv);
+    fprintf(2, "exec %s failed\n", ecmd->argv[0]);
+    break;
+
   case REDIR:
     rcmd = (struct redircmd*)cmd;
     close(rcmd->fd);
@@ -124,6 +139,7 @@ runcmd(struct cmd *cmd)
 
   case BACK:
     bcmd = (struct backcmd*)cmd;
+    bcmd->cmd->type = EXEC_REPARENT;
     if(fork1() == 0)
       runcmd(bcmd->cmd);
     break;

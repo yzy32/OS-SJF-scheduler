@@ -365,6 +365,14 @@ exit(int status)
   end_op();
   p->cwd = 0;
 
+  if (p->parent == initproc)
+  {
+	acquire(&tickslock);
+	p->tick_exit = ticks;
+	release(&tickslock);
+	printf("%d Done\t\t%s %d\n", p->pid, p->name, p->tick_exit - p->tick_exec);
+  }
+
   acquire(&wait_lock);
 
   // Give any children to init.

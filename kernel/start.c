@@ -67,6 +67,7 @@ timerinit()
 
   // ask the CLINT for a timer interrupt.
   int interval = 1000000; // cycles; about 1/10th second in qemu.
+  //int interval = 10000; // NOTE by CW: we may shorten the interval to have a fine-grained turnaround time record for processes but sleep (our sleep program sleeps for the given number of ticks).
   *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval;
 
   // prepare information in scratch[] for timervec.

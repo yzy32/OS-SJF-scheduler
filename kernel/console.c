@@ -50,6 +50,11 @@ struct {
   uint r;  // Read index
   uint w;  // Write index
   uint e;  // Edit index
+  char histBuf[5][INPUT_BUF_SIZE];
+  int histIndex;
+  int currentIndex;
+  int histSize;
+  int histOffset;
 } cons;
 
 //
@@ -138,6 +143,66 @@ consoleintr(int c)
   acquire(&cons.lock);
 
   switch(c){
+  case C('W'):
+	if (cons.histOffset == cons.histSize) {
+		printf("\a");
+		break;
+	}
+	cons.histOffset ++;
+    // kill line first
+    while(cons.e != cons.w &&
+          cons.buf[(cons.e-1) % INPUT_BUF_SIZE] != '\n'){
+      cons.e--;
+      consputc(BACKSPACE);
+    }
+    if (cons.histIndex == 0)
+		cons.histIndex = 4;
+	else
+		cons.histIndex --;
+    for (int i = 0; i < INPUT_BUF_SIZE; i++) {
+		if (cons.histBuf[cons.histIndex][i] != '\n') {
+			consputc(cons.histBuf[cons.histIndex][i]);
+			cons.buf[cons.e++ % INPUT_BUF_SIZE] = cons.histBuf[cons.histIndex][i];
+		} else {
+			break;
+		}
+	}
+    break;
+//  case 'l':
+//    printf("hi");
+//    cons.buf[cons.e++ % INPUT_BUF_SIZE] = 'l';
+//    break;
+  case C('S'):
+    if (cons.histOffset <= 1) {
+		// kill line first
+		while(cons.e != cons.w &&
+		  cons.buf[(cons.e-1) % INPUT_BUF_SIZE] != '\n'){
+			cons.e--;
+			consputc(BACKSPACE);
+		}
+		printf("\a");
+		break;
+	}
+	cons.histOffset --;
+    // kill line first
+    while(cons.e != cons.w &&
+          cons.buf[(cons.e-1) % INPUT_BUF_SIZE] != '\n'){
+      cons.e--;
+      consputc(BACKSPACE);
+    }
+    if (cons.histIndex == 4)
+		cons.histIndex = 0;
+	else
+		cons.histIndex ++;
+    for (int i = 0; i < INPUT_BUF_SIZE; i++) {
+		if (cons.histBuf[cons.histIndex][i] != '\n') {
+			consputc(cons.histBuf[cons.histIndex][i]);
+			cons.buf[cons.e++ % INPUT_BUF_SIZE] = cons.histBuf[cons.histIndex][i];
+		} else {
+			break;
+		}
+	}
+    break;
   case C('P'):  // Print process list.
     procdump();
     break;
@@ -166,6 +231,24 @@ consoleintr(int c)
       cons.buf[cons.e++ % INPUT_BUF_SIZE] = c;
 
       if(c == '\n' || c == C('D') || cons.e-cons.r == INPUT_BUF_SIZE){
+        // copy this line of command into a history buffer
+        uint i = cons.e-1;
+		while(i != cons.w &&
+         cons.buf[(i-1) % INPUT_BUF_SIZE] != '\n'){
+			i--;
+		}
+       int j = 0;
+		while(i != cons.e) {
+			cons.histBuf[cons.currentIndex][j] = cons.buf[i % INPUT_BUF_SIZE];
+			i++; j++;
+       }
+		cons.currentIndex = (cons.currentIndex + 1) % 5;
+		cons.histIndex = cons.currentIndex;
+		if (cons.histSize < 5)
+			cons.histSize ++;
+		cons.histOffset = 0;
+		//printf("\n", cons.buf[i]);
+
         // wake up consoleread() if a whole line (or end-of-file)
         // has arrived.
         cons.w = cons.e;
@@ -182,6 +265,10 @@ void
 consoleinit(void)
 {
   initlock(&cons.lock, "cons");
+  cons.histIndex = 0;
+  cons.currentIndex = 0;
+  cons.histSize = 0;
+  cons.histOffset = 0;
 
   uartinit();
 
