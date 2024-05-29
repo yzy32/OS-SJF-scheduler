@@ -459,23 +459,36 @@ scheduler(void)
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
-
+    
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
+        if(cpuid()==1 && (p->pid!=1 && p->pid!=2)){ // pin scheduler on cpu 1 except init(pid 0) and sh(pid 1)
+          printf("== CPU %d schedules to run process pid %d ==\n", cpuid(), p->pid);
+          p->state = RUNNING;
+          c->proc = p;
+          swtch(&c->context, &p->context);
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
+        } else if (cpuid()!=1 && (p->pid ==1 || p->pid ==2)){
+          printf("** CPU %d schedules to run process pid %d **\n", cpuid(), p->pid);
+          p->state = RUNNING;
+          c->proc = p;
+          swtch(&c->context, &p->context);
+
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
+        }
       }
       release(&p->lock);
     }
+
   }
 }
 
