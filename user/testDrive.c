@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     } else if (rc==0){
       // printf("Child %d will run for %d seconds.\n", i, job_length);
       char *length = argv[i+1];
-      char *job_argv[] = { "job", length };
+      char *job_argv[] = { "job", length, '\0' };
       exec("/job", job_argv);
       exit(0);
     } else {
