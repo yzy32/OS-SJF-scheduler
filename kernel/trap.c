@@ -182,11 +182,11 @@ clockintr()
           p->killed = 1; // Mark the process as killed
           p->tick_exit = ticks;
           release(&p->lock);
-          // acquire(&wait_lock);
-          // wakeup(p->parent);
-          // p->xstate = 0;
+          acquire(&wait_lock);
+          wakeup(p->parent);
+          p->xstate = 0;
           // p->state = ZOMBIE;
-          // release(&wait_lock);
+          release(&wait_lock);
           printf("Job length: %d, Turnaround time: %d\n", p->desired_uptime, p->tick_exit-p->tick_exec);
           continue;
         }
