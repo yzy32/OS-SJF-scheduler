@@ -10,6 +10,17 @@
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 extern struct proc *initproc;
 
+int
+atoi(const char *s)
+{
+  int n;
+
+  n = 0;
+  while('0' <= *s && *s <= '9')
+    n = n*10 + *s++ - '0';
+  return n;
+}
+
 int flags2perm(int flags)
 {
     int perm = 0;
@@ -94,13 +105,27 @@ exec(char *path, char **argv)
       goto bad;
     if (!argv[argc+1]) { // i.e., it is the last argument
       if (argv[argc][0] == '&') { // is background process
-	      //printf("bg_process --- reparent it to init\n");
+	      // printf("bg_process --- reparent it to init\n");
 	      p->parent = initproc;
-			acquire(&tickslock);
-			p->tick_exec = ticks;
-			release(&tickslock);
+        acquire(&tickslock);
+        p->tick_exec = ticks;
+        if (strcmp(argv[0], "job")==0) {
+          // printf("Exec job for %d ticks\n", atoi(argv[argc-1]));
+          p->desired_uptime = atoi(argv[argc-1]);
+          p->remained_uptime = p->desired_uptime;
+        }
+        release(&tickslock);
 	      break;
       }
+      if (strcmp(argv[0], "job")==0) {
+        // printf("Exec job for %d ticks\n", atoi(argv[argc]));
+        acquire(&tickslock);
+        p->tick_exec = ticks;
+        p->desired_uptime = atoi(argv[argc]);
+        p->remained_uptime = p->desired_uptime;
+        release(&tickslock);
+      }
+
     }
     sp -= strlen(argv[argc]) + 1;
     sp -= sp % 16; // riscv sp must be 16-byte aligned

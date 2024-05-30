@@ -106,4 +106,8 @@ struct proc {
   char name[16];               // Process name (debugging)
   uint tick_exec;
   uint tick_exit;
+  uint desired_uptime;
+  uint remained_uptime;
 };
+
+int strcmp(const char *p, const char *q);

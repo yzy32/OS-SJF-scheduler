@@ -6,6 +6,14 @@
 #include "proc.h"
 #include "defs.h"
 
+int
+strcmp(const char *p, const char *q)
+{
+  while(*p && *p == *q)
+    p++, q++;
+  return (uchar)*p - (uchar)*q;
+}
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -365,12 +373,12 @@ exit(int status)
   end_op();
   p->cwd = 0;
 
-  if (p->parent == initproc)
+  if (p->parent == initproc && strcmp(p->name, "job")!=0)
   {
-	acquire(&tickslock);
-	p->tick_exit = ticks;
-	release(&tickslock);
-	printf("%d Done\t\t%s %d\n", p->pid, p->name, p->tick_exit - p->tick_exec);
+    acquire(&tickslock);
+    p->tick_exit = ticks;
+    release(&tickslock);
+    printf("%d Done\t\t%s %d\n", p->pid, p->name, p->tick_exit - p->tick_exec);
   }
 
   acquire(&wait_lock);
@@ -467,7 +475,7 @@ scheduler(void)
         // to release its lock and then reacquire it
         // before jumping back to us.
         if(cpuid()==1 && (p->pid!=1 && p->pid!=2)){ // pin scheduler on cpu 1 except init(pid 0) and sh(pid 1)
-          printf("== CPU %d schedules to run process pid %d ==\n", cpuid(), p->pid);
+          // printf("== CPU %d schedules to run process pid %d ==\n", cpuid(), p->pid); //FIXME:
           p->state = RUNNING;
           c->proc = p;
           swtch(&c->context, &p->context);
@@ -476,7 +484,7 @@ scheduler(void)
           // It should have changed its p->state before coming back.
           c->proc = 0;
         } else if (cpuid()!=1 && (p->pid ==1 || p->pid ==2)){
-          printf("** CPU %d schedules to run process pid %d **\n", cpuid(), p->pid);
+          // printf("** CPU %d schedules to run process pid %d **\n", cpuid(), p->pid); //FIXME:
           p->state = RUNNING;
           c->proc = p;
           swtch(&c->context, &p->context);

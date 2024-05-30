@@ -6,6 +6,9 @@
 #include "proc.h"
 #include "defs.h"
 
+extern struct proc proc[NPROC];
+extern struct spinlock wait_lock;
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -165,9 +168,33 @@ clockintr()
 {
   acquire(&tickslock);
   ticks++;
-//printf("%d\n", ticks);
   wakeup(&ticks);
   release(&tickslock);
+
+  struct proc *p;
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state == RUNNING && strcmp(p->name, "job")==0){
+      if(p->remained_uptime > 0){
+        p->remained_uptime--;
+        // printf("Remained uptime: %d\n", p->remained_uptime); //FIXME:
+        if(p->remained_uptime == 0){
+          p->killed = 1; // Mark the process as killed
+          p->tick_exit = ticks;
+          release(&p->lock);
+          // acquire(&wait_lock);
+          // wakeup(p->parent);
+          // p->xstate = 0;
+          // p->state = ZOMBIE;
+          // release(&wait_lock);
+          printf("Job length: %d, Turnaround time: %d\n", p->desired_uptime, p->tick_exit-p->tick_exec);
+          continue;
+        }
+        
+      }
+    }
+    release(&p->lock);
+  }
 }
 
 // check if it's an external interrupt or software interrupt,
